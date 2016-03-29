@@ -27,6 +27,9 @@
         android:name="android.permission.WRITE_SYNC_SETTINGS"/>
     <uses-permission
         android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
+    <!-- Used to determine connectivity to diagnose reason for no weather data -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
         android:allowBackup="true"
@@ -88,6 +91,9 @@
                 android:name="android.content.SyncAdapter"
                 android:resource="@xml/syncadapter" />
         </service>
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="17bdbd5c72616f2f5433816441c563223d6e1791" />
     </application>
 
 </manifest>

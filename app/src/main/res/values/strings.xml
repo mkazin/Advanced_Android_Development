@@ -110,5 +110,5 @@
     <string name="pref_last_notification">last_notification</string>
 
     <string name="no_weather_available">No Weather Information Available</string>
-
+    <string name="no_internet_access">No Internet access</string>
 </resources>
