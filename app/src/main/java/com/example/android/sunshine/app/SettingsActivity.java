@@ -139,6 +139,11 @@ public class SettingsActivity extends PreferenceActivity
             @SunshineSyncAdapter.LocationStatus int newStatus = Utility.getLocationStatus(this);
             Log.d(LOG_TAG, "LocationStatus changed to " + String.valueOf(newStatus));
 
+            /**
+             * FIXME: this can be cleaned up. The answer showed the value being obtained using
+             * haivng this check done in the setPreferenceSummary() instead. That function
+             * takes an Object, avoiding the need to handle a type error
+             */
             String locationValue;
             try {
                 int location = sharedPreferences.getInt(getString(R.string.pref_location_key), -1);
