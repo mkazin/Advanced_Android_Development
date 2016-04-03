@@ -24,6 +24,8 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.support.annotation.IntDef;
+import android.util.Log;
 
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
@@ -38,6 +40,8 @@ import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
  */
 public class SettingsActivity extends PreferenceActivity
         implements Preference.OnPreferenceChangeListener, SharedPreferences.OnSharedPreferenceChangeListener {
+
+    public final String LOG_TAG = SettingsActivity.class.getSimpleName();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -104,7 +108,16 @@ public class SettingsActivity extends PreferenceActivity
     // This gets called before the preference is changed
     @Override
     public boolean onPreferenceChange(Preference preference, Object value) {
-        setPreferenceSummary(preference, value);
+
+        Log.d(LOG_TAG, "Preference " + preference.getKey() + " changed to " + String.valueOf(value));
+
+        if (preference.getKey().equals(getString(R.string.pref_location_key))) {
+            setPreferenceSummary(preference, String.format(
+                    getString(R.string.pref_location_unknown_description),
+                    String.valueOf(value)));
+        } else {
+            setPreferenceSummary(preference, value);
+        }
         return true;
     }
 
@@ -112,8 +125,37 @@ public class SettingsActivity extends PreferenceActivity
     // start our synchronization here
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+
         if ( key.equals(getString(R.string.pref_location_key)) ) {
+
+            try {
+                Log.d(LOG_TAG, "SharedPreference " + key + " changed to " + String.valueOf(sharedPreferences.getInt(key, -1)));
+            } catch (ClassCastException e) {
+                Log.d(LOG_TAG, "SharedPreference " + key + " changed to " + sharedPreferences.getString(key, "?"));
+            }
+            Utility.resetLocationStatus(this);
             SunshineSyncAdapter.syncImmediately(this);
+        } else if ( key.equals(getString(R.string.sp_server_status))) {
+            @SunshineSyncAdapter.LocationStatus int newStatus = Utility.getLocationStatus(this);
+            Log.d(LOG_TAG, "LocationStatus changed to " + String.valueOf(newStatus));
+
+            String locationValue;
+            try {
+                int location = sharedPreferences.getInt(getString(R.string.pref_location_key), -1);
+                locationValue = String.valueOf(location);
+            } catch (ClassCastException e) {
+                locationValue = sharedPreferences.getString(getString(R.string.pref_location_key), "?");
+            }
+
+            // If the server status is good, use the location value as the text
+            String statusText = String.format("(unimplemented status state: {})", newStatus);
+            if (newStatus == SunshineSyncAdapter.LOCATION_STATUS_OK) {
+                statusText = locationValue;
+            } else if (newStatus == SunshineSyncAdapter.LOCATION_STATUS_INVALID) {
+                statusText = String.format(getString(R.string.pref_location_error_description), locationValue);
+            }
+            setPreferenceSummary(findPreference(getString(R.string.pref_location_key)), statusText);
+
         } else if ( key.equals(getString(R.string.pref_units_key)) ) {
             // units have changed. update lists of weather entries accordingly
             getContentResolver().notifyChange(WeatherContract.WeatherEntry.CONTENT_URI, null);

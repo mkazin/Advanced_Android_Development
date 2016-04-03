@@ -111,4 +111,15 @@
 
     <string name="no_weather_available">No Weather Information Available</string>
     <string name="no_internet_access">No Internet access</string>
+
+    <string name="invalid_location_setting">Invalid location specified in settings</string>
+    <string name="empty_forecast_list_server_down">No weather information available. The server is not returning data.</string>
+    <string name="empty_forecast_list_server_error">No weather information available. The server is not returning valid data. Please check for an updated version of Sunshine.</string>
+
+    <!-- Strings used when displaying the state of the Location in settings -->
+    <string name="pref_location_error_description">Invalid Location (<xliff:g id="location_setting">%1$s</xliff:g>)"</string>
+    <string name="pref_location_unknown_description">Validating Location... (<xliff:g id="location_setting">%1$s</xliff:g>)"</string>
+
+    <!-- Shared Preferences -->
+    <string name="sp_server_status">server_status</string>
 </resources>

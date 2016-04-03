@@ -16,9 +16,11 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -33,15 +35,15 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
+import com.example.android.sunshine.app.sync.SunshineSyncAdapter.LocationStatus;
 
 /**
  * Encapsulates fetching the forecast and displaying it as a {@link ListView} layout.
  */
-public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
+public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>, SharedPreferences.OnSharedPreferenceChangeListener {
     public static final String LOG_TAG = ForecastFragment.class.getSimpleName();
     private ForecastAdapter mForecastAdapter;
 
@@ -84,6 +86,27 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     static final int COL_WEATHER_CONDITION_ID = 6;
     static final int COL_COORD_LAT = 7;
     static final int COL_COORD_LONG = 8;
+
+    @Override
+    public void onPause() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        prefs.unregisterOnSharedPreferenceChangeListener(this);
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        prefs.registerOnSharedPreferenceChangeListener(this);
+        super.onResume();
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals(getString(R.string.sp_server_status))) {
+            updateEmptyView();
+        }
+    }
 
     /**
      * A callback interface that all activities containing this fragment must
@@ -251,16 +274,9 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        String text;
         // Handle the empty view in case no data is available
         if (data.getCount() < 1) {
-            TextView emptyView = (TextView) rootView.findViewById(R.id.empty_forecast);
-            if (Utility.isInternetAvailable(this.getActivity())) {
-                text = this.getActivity().getString(R.string.no_weather_available);
-            } else {
-                text = this.getActivity().getString(R.string.no_internet_access);
-            }
-            emptyView.setText(text);
+            updateEmptyView();
         }
 
         mForecastAdapter.swapCursor(data);
@@ -269,6 +285,40 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
             // to, do so now.
             mListView.smoothScrollToPosition(mPosition);
         }
+    }
+
+    public void updateEmptyView() {
+
+        // If we have data, we have nothing to do with the empty view
+        if (mForecastAdapter.getCount() > 0){
+            return;
+        }
+
+        @SunshineSyncAdapter.LocationStatus int serverStatus = Utility.getLocationStatus(this.getActivity());
+        String text;
+        TextView emptyView = (TextView) rootView.findViewById(R.id.empty_forecast);
+        switch (serverStatus) {
+            case SunshineSyncAdapter.LOCATION_STATUS_SERVER_INVALID:
+                text = this.getActivity().getString(R.string.empty_forecast_list_server_error);
+                break;
+            case SunshineSyncAdapter.LOCATION_STATUS_SERVER_DOWN:
+                text = this.getActivity().getString(R.string.empty_forecast_list_server_down);
+                break;
+            case SunshineSyncAdapter.LOCATION_STATUS_INVALID:_STATUS_INVALID:
+                text = this.getActivity().getString(R.string.invalid_location_setting);
+                break;
+            case SunshineSyncAdapter.LOCATION_STATUS_UNKNOWN:
+                text = "Unknown server error";
+                break;
+            default:
+                if (Utility.isInternetAvailable(this.getActivity())) {
+                    text = this.getActivity().getString(R.string.no_weather_available);
+                } else {
+                    text = this.getActivity().getString(R.string.no_internet_access);
+                }
+                break;
+        }
+        emptyView.setText(text);
     }
 
     @Override
